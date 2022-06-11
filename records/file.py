@@ -13,13 +13,16 @@ class File(BaseRecord):
         name        name of a file
         location    real file path
         format_     format of a file
-        size        size of a file
         modified    last time of a file
+        size        size of a file
+        id          unique id of a record
+
     """
     def __init__(self, path, handler):
         super().__init__()
         self.handler = handler
         file_dict = self.handler.get_file_stat(path)
+        self.id = file_dict.get("id")
         self.name = file_dict.get("name")
         self.location = file_dict.get("location")
         self.format_ = file_dict.get("format")
@@ -76,7 +79,7 @@ class File(BaseRecord):
         return new_file
 
     def __str__(self):
-        return f"Type: File" \
+        return f"Type: File\n" \
                f"Lctn: {self.get_full_path()}\n" \
                f"Name: {self.name}\n" \
                f"Frmt: {self.format_}\n" \

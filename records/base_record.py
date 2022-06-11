@@ -11,12 +11,14 @@ class BaseRecord(ABC):
         name        name of the record
         modified    last time modified
         size        size of a record
+        id          unique id of a record
     """
     def __init__(self):
         self.location = None
         self.name = None
         self.modified = None
         self.size = None
+        self.id = None
 
     @abstractmethod
     def get_full_path(self) -> str:
@@ -48,4 +50,5 @@ class BaseRecord(ABC):
             "name": self.name,
             "size": self.size,
             "modified": self.modified,
+            "id": self.id
         }

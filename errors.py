@@ -1,6 +1,7 @@
 class BaseBackupException(Exception):
     pass
 
+
 class NotFileException(BaseBackupException):
     def __init__(self, record_path):
         self.record_path = record_path

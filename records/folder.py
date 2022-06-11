@@ -13,14 +13,16 @@ class Folder(BaseRecord):
         handler         handler to manipulate a real file
         name            name of a file
         location        real file path
-        size            size of a file
         modified        last time of a file
+        size            size of a file
+        id          unique id of a record
         base_location   needed to know the relative and absolute path
     """
     def __init__(self, path, handler, base_location=None):
         super().__init__()
         self.handler = handler
         folder_dict = self.handler.get_folder_stat(path)
+        self.id = folder_dict.get("id")
         self.name = folder_dict.get("name")
         self.base_location = base_location
         self.location = folder_dict.get("location")
