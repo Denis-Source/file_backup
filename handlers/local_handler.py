@@ -49,7 +49,7 @@ class LocalHandler(BaseHandler):
         if "." in name:
             format_ = name.split(".")[-1]
         else:
-            format_ = "no format"
+            format_ = "no_format"
         name = name[:-len(format_) - 1]
         self.LOGGER.info(f"Got information about a file at {path}")
         return {
@@ -101,9 +101,13 @@ class LocalHandler(BaseHandler):
         :return: bytes
         """
         self.LOGGER.debug(f"Getting file content at {file.get_full_path()}")
-        with open(file.get_full_path(), "rb") as f:
-            self.LOGGER.info(f"File at {file.get_full_path()} is read")
-            return f.read()
+        try:
+            with open(file.get_full_path(), "rb") as f:
+                self.LOGGER.info(f"File at {file.get_full_path()} is read")
+                return f.read()
+        except (FileNotFoundError, PermissionError):
+            self.LOGGER.error(f"Cant read file {file.get_full_path()}")
+            return b""
 
     def upload_file(self, file: File, remote_folder: Folder) -> File:
         """

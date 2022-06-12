@@ -52,7 +52,7 @@ class SFTPHandler(BaseHandler):
         if "." in name:
             format_ = name.split(".")[-1]
         else:
-            format_ = "no format"
+            format_ = "no_format"
         name = name[:-len(format_) - 1]
         self.LOGGER.info(f"Got information about a file at {path}")
 
@@ -94,9 +94,13 @@ class SFTPHandler(BaseHandler):
 
     def get_file_content(self, file: File) -> bytes:
         self.LOGGER.debug(f"Getting file content at {file.get_full_path()}")
-        with self.CONNECTION.open(file.get_full_path(), "rb") as f:
-            self.LOGGER.info(f"File at {file.get_full_path()} is read")
-            return f.read()
+        try:
+            with self.CONNECTION.open(file.get_full_path(), "rb") as f:
+                self.LOGGER.info(f"File at {file.get_full_path()} is read")
+                return f.read()
+        except (OSError, FileNotFoundError, PermissionError):
+            self.LOGGER.error(f"Cant read file {file.get_full_path()}")
+            return b""
 
     def upload_file(self, file: File, remote_folder: Folder) -> File:
         """
@@ -108,14 +112,17 @@ class SFTPHandler(BaseHandler):
         """
 
         self.LOGGER.debug(f"Uploading file from {file.get_full_path()} to {remote_folder.get_full_path()}")
-        new_file_path = f"{remote_folder.get_full_path()}/{file.name}.{file.format_}"
+
+        new_file_path = f"{remote_folder.get_full_path()}/{file.name}"
+        if file.name != "no_format":
+            new_file_path += f".{file.format_}"
 
         with self.CONNECTION.open(new_file_path, "wb") as f:
             f.write(file.get_content())
         self.CONNECTION.sftp_client.utime(new_file_path, (file.modified, file.modified))
 
         uploaded_file = File(
-            path=f"{remote_folder.get_full_path()}/{file.name}.{file.format_}",
+            path=new_file_path,
             handler=self
         )
 

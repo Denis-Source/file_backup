@@ -18,16 +18,18 @@ class File(BaseRecord):
         id          unique id of a record
 
     """
-    def __init__(self, path, handler):
+
+    def __init__(self, path, handler, info_dict: dict = None):
         super().__init__()
         self.handler = handler
-        file_dict = self.handler.get_file_stat(path)
-        self.id = file_dict.get("id")
-        self.name = file_dict.get("name")
-        self.location = file_dict.get("location")
-        self.format_ = file_dict.get("format")
-        self.size = file_dict.get("size")
-        self.modified = file_dict.get("modified")
+        if not info_dict:
+            info_dict = self.handler.get_file_stat(path)
+        self.id = info_dict.get("id")
+        self.name = info_dict.get("name")
+        self.location = info_dict.get("location")
+        self.format_ = info_dict.get("format")
+        self.size = info_dict.get("size")
+        self.modified = info_dict.get("modified")
 
     def get_dict(self):
         """
@@ -47,7 +49,7 @@ class File(BaseRecord):
         :return:
         """
         path = f"{self.location}/{self.name}"
-        if self.format_ != "no format":
+        if self.format_ != "no_format":
             path += f".{self.format_}"
         return path
 
@@ -84,4 +86,5 @@ class File(BaseRecord):
                f"Name: {self.name}\n" \
                f"Frmt: {self.format_}\n" \
                f"Size: {self.size}\n" \
-               f"Crtd: {self.modified}\n"
+               f"Modf: {self.modified}\n" \
+               f"Id:   {self.id}\n"

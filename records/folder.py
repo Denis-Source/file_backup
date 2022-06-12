@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from records.base_record import BaseRecord
 from records.file import File
 
@@ -18,17 +20,19 @@ class Folder(BaseRecord):
         id          unique id of a record
         base_location   needed to know the relative and absolute path
     """
-    def __init__(self, path, handler, base_location=None):
+
+    def __init__(self, path, handler, base_location=None, info_dict: dict = None):
         super().__init__()
         self.handler = handler
-        folder_dict = self.handler.get_folder_stat(path)
-        self.id = folder_dict.get("id")
-        self.name = folder_dict.get("name")
+        if not info_dict:
+            info_dict = self.handler.get_folder_stat(path)
+        self.id = info_dict.get("id")
+        self.name = info_dict.get("name")
         self.base_location = base_location
-        self.location = folder_dict.get("location")
+        self.location = info_dict.get("location")
 
-        self.size = folder_dict.get("size")
-        self.modified = folder_dict.get("modified")
+        self.size = info_dict.get("size")
+        self.modified = info_dict.get("modified")
 
         self.children = dict()
 
@@ -59,7 +63,7 @@ class Folder(BaseRecord):
             if isinstance(record, Folder):
                 record.set_content()
 
-    def copy(self, remote_location, remote_handler, with_content=False):
+    def copy(self, remote_location, remote_handler, with_content=False) -> Folder:
         """
         Copyies the folder into a remote location
         Uses remote handler to create and store file
@@ -108,4 +112,6 @@ class Folder(BaseRecord):
                f"Lctn: {self.get_full_path()}\n" \
                f"Name: {self.name}\n" \
                f"Size: {self.size}\n" \
-               f"Crtd: {self.modified}\n"
+               f"Modf: {self.modified}\n" \
+               f"Id:   {self.id}\n"
+

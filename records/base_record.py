@@ -13,6 +13,7 @@ class BaseRecord(ABC):
         size        size of a record
         id          unique id of a record
     """
+
     def __init__(self):
         self.location = None
         self.name = None
