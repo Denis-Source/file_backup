@@ -5,7 +5,7 @@ from handlers.base_handler import BaseHandler
 from logger import Logger
 import pysftp
 
-from errors import NoBasePathSpecifiedException
+from errors import NoBasePathSpecifiedException, UnableToAccessException, RecordNotFoundException
 from records.file import File
 from records.folder import Folder
 
@@ -18,7 +18,9 @@ class SFTPHandler(BaseHandler):
     Constants:
         HANDLER_NAME    name of the handler
         LOGGER          logger instance
+        CONNECTION      sftp connection based on pysftp.Connection
     """
+
     HANDLER_NAME = "sftp handler"
     LOGGER = Logger(HANDLER_NAME)
 
@@ -32,34 +34,23 @@ class SFTPHandler(BaseHandler):
         """
         Returns the following stats about the specified file
         in a form of a dictionary:
-            location
-            name
-            format
             modified
             size
-        Uses os.stat to access a file
+        pysftp cannot provide id of the file
+        Uses pysftp.Connection stat() method to access file information
 
         :param path: location of the file
         :return: dictionary with the specified information
         """
+
         self.LOGGER.debug(f"Getting information about a file at {path}")
         if not self.CONNECTION.isfile(path):
             self.LOGGER.warning(f"{path} is not a file")
 
         stat = self.CONNECTION.stat(path)
-        name = path.split("/")[-1]
-        location = "/".join(path.split("/")[:-1])
-        if "." in name:
-            format_ = name.split(".")[-1]
-        else:
-            format_ = "no_format"
-        name = name[:-len(format_) - 1]
         self.LOGGER.info(f"Got information about a file at {path}")
 
         return {
-            "location": location,
-            "name": name,
-            "format": format_,
             "modified": stat.st_mtime,
             "size": stat.st_size,
         }
@@ -68,62 +59,96 @@ class SFTPHandler(BaseHandler):
         """
         Returns the following stats about the specified folder
         in a form of a dictionary:
-            location
-            name
             created
             size
-        Uses os.stat to access a folder
+        pysftp cannot provide id of the file
+        Uses pysftp.Connection stat() method to access file information
 
 
         :param path: location of the folder
         :return: dictionary with the specified information
         """
+
         self.LOGGER.debug(f"Getting information about a folder at {path}")
         if not self.CONNECTION.isdir(path):
             self.LOGGER.warning(f"{path} is not a file")
         stat = self.CONNECTION.stat(path)
-        name = path.split("/")[-1]
-        location = "/".join(path.split("/")[:-1])
         self.LOGGER.info(f"Got information about a folder at {path}")
         return {
-            "location": location,
-            "name": name,
             "modified": stat.st_mtime,
             "size": stat.st_size
         }
 
     def get_file_content(self, file: File) -> bytes:
-        self.LOGGER.debug(f"Getting file content at {file.get_full_path()}")
+        """
+        Returns file content in bytes
+        Uses pysftp open() to get file contents
+
+        :raises UnableToAccessException: if a file could not be read
+
+        :param file: File object instance
+        :return: file contents in bytes
+        """
+
+        self.LOGGER.debug(f"Getting file content at {file.path}")
         try:
-            with self.CONNECTION.open(file.get_full_path(), "rb") as f:
-                self.LOGGER.info(f"File at {file.get_full_path()} is read")
+            with self.CONNECTION.open(file.path, "rb") as f:
+                self.LOGGER.info(f"File at {file.path} is read")
                 return f.read()
         except (OSError, FileNotFoundError, PermissionError):
-            self.LOGGER.error(f"Cant read file {file.get_full_path()}")
-            return b""
+            self.LOGGER.error(f"Cant read file {file.path}")
+            raise UnableToAccessException(file.path)
+
+    def set_file_content(self, file: File, content: bytes) -> None:
+        """
+        Updates file content
+        The file should be copied first
+
+        :raises UnableToAccessException: if the file could not be accessed
+
+        :param file:    File object instance to update
+        :param content: bytes to load in the file
+        :return:        None
+        """
+
+        self.LOGGER.info(f"Updating {file.path} content")
+        try:
+            with self.CONNECTION.open(file.path, "wb") as f:
+                f.write(content)
+        except (OSError, PermissionError):
+            self.LOGGER.error(f"Unable to update {file.path} contents")
+            raise UnableToAccessException(file.path)
 
     def upload_file(self, file: File, remote_folder: Folder) -> File:
         """
         Copies the specified file into a remote folder
 
-        :param file: File object instance
-        :param remote_folder: Folder object instance
+        :raises UnableToAccessException: if a file cannot be uploaded
+
+        :param file:            File object instance
+        :param remote_folder:   Folder object instance
+
         :return: new File instance
         """
 
-        self.LOGGER.debug(f"Uploading file from {file.get_full_path()} to {remote_folder.get_full_path()}")
+        self.LOGGER.debug(f"Uploading file from {file.path} to {remote_folder.path}")
 
-        new_file_path = f"{remote_folder.get_full_path()}/{file.name}"
-        if file.name != "no_format":
-            new_file_path += f".{file.format_}"
-
-        with self.CONNECTION.open(new_file_path, "wb") as f:
-            f.write(file.get_content())
-        self.CONNECTION.sftp_client.utime(new_file_path, (file.modified, file.modified))
+        new_file_path = f"{remote_folder.path}/{file.name}"
+        try:
+            with self.CONNECTION.open(new_file_path, "wb") as f:
+                size = f.write(file.get_content())
+            self.CONNECTION.sftp_client.utime(new_file_path, (file.modified, file.modified))
+        except (PermissionError, OSError):
+            self.LOGGER.warning(f"Cant create a file {new_file_path}")
+            raise UnableToAccessException(new_file_path)
 
         uploaded_file = File(
             path=new_file_path,
-            handler=self
+            handler=self,
+            stat={
+                "size": size,
+                "modified": file.modified
+            }
         )
 
         self.LOGGER.info(f"Created new file at {new_file_path}")
@@ -138,21 +163,24 @@ class SFTPHandler(BaseHandler):
         Uses upload_file() to upload file as contents of a folder
         thus preserves file metadata
 
+        :raises NoBasePathSpecifiedException: if the folder base path is not specified
+        :raises UnableToAccessException: if the folder cannot be accessed
+
         :param folder: Folder object instance to copy from
         :param new_folder_path: string path to copy to
         :param with_content: whether to copy folder contents
         :return: newly created Folder object instance
         """
 
-        self.LOGGER.debug(f"Uploading file from {folder.get_full_path()} to {new_folder_path}")
+        self.LOGGER.debug(f"Uploading file from {folder.path} to {new_folder_path}")
 
         if folder.base_location:
-            folder_relative_path = folder.get_full_path().replace(folder.base_location, "")
+            folder_relative_path = folder.path.replace(folder.base_location, "")
         else:
-            self.LOGGER.warning(f"Cant upload folder at {folder.get_full_path()}, no base path specified")
-            raise NoBasePathSpecifiedException(folder.get_full_path())
+            self.LOGGER.warning(f"Cant upload folder at {folder.path}, no base path specified")
+            raise NoBasePathSpecifiedException(folder.path)
 
-        prev_folder_path = new_folder_path
+        new_base_folder_path = new_folder_path
         new_folder_path = f"{new_folder_path}{folder_relative_path}"
         try:
             self.LOGGER.info(f"Creating folder at {new_folder_path}")
@@ -162,26 +190,25 @@ class SFTPHandler(BaseHandler):
             self.LOGGER.info(f"Folder at {new_folder_path} is already exists")
         except OSError:
             self.LOGGER.warning(f"Cant create folder at {new_folder_path}")
+            raise UnableToAccessException(new_folder_path)
 
         new_folder = Folder(new_folder_path, self)
 
         if with_content:
-            self.LOGGER.debug(f"Сopying the contents of the folder at {folder.get_full_path()} to {new_folder_path}")
-            for path, record in folder.children.items():
+            self.LOGGER.debug(f"Сopying the contents of the folder at {folder.path} to {new_folder_path}")
 
+            for path, record in folder.children.items():
                 if self.validate(path):
-                    self.LOGGER.info(f"Сopying {record.__class__.__name__} at {record.get_full_path()}")
-                    if isinstance(record, File):
-                        try:
+                    self.LOGGER.info(f"Сopying {record.__class__.__name__} at {record.path}")
+                    try:
+                        if isinstance(record, File):
                             file = self.upload_file(record, new_folder)
                             new_folder.add_child(file)
-                        except PermissionError:
-                            self.LOGGER.warning(f"No permission to {record.get_full_path()}")
-                        except FileNotFoundError:
-                            self.LOGGER.warning(f"Cant access {record.get_full_path()}")
-                    else:
-                        folder = self.upload_folder(record, prev_folder_path, with_content=True)
-                        new_folder.add_child(folder)
+                        else:
+                            folder = self.upload_folder(record, new_base_folder_path, with_content=True)
+                            new_folder.add_child(folder)
+                    except UnableToAccessException:
+                        self.LOGGER.warning(f"Cant create a child record in folder {folder.path}")
                 else:
                     self.LOGGER.info(f"{path} is not validated, skipping")
 
@@ -189,19 +216,19 @@ class SFTPHandler(BaseHandler):
 
     def get_folder_content(self, folder: Folder) -> List[Union[File, Folder]]:
         """
-        Gets the folder content in a form of a list
+        Gets the folder content in a form of files and folders
         :param folder: Folder object instance
         :return: List of File and Folder objects
 
         Uses pysftp module
         """
 
-        self.LOGGER.debug(f"Getting folder content at {folder.get_full_path()}")
+        self.LOGGER.debug(f"Getting folder content at {folder.path}")
         records = []
-        for record_path in self.CONNECTION.listdir(folder.get_full_path()):
+        for record_path in self.CONNECTION.listdir(folder.path):
             if self.validate(record_path):
                 try:
-                    record_path = f"{folder.get_full_path()}/{record_path}"
+                    record_path = f"{folder.path}/{record_path}"
                     if self.CONNECTION.isfile(record_path):
                         records.append(File(
                             record_path, self
@@ -212,11 +239,8 @@ class SFTPHandler(BaseHandler):
                             self,
                             folder.base_location
                         ))
-                except OSError:
-                    self.LOGGER.warning(f"Cant access record at {record_path}")
+                except (UnableToAccessException, RecordNotFoundException):
+                    self.LOGGER.warning(f"Error handling record at {record_path}")
             else:
                 self.LOGGER.info(f"{record_path} is not validated, skipping")
         return records
-
-    def dump_file_structure(self, root_folder: Folder, location) -> File:
-        pass

@@ -22,11 +22,7 @@ class BaseRecord(ABC):
         self.id = None
 
     @abstractmethod
-    def get_full_path(self) -> str:
-        """
-        Should return path of a record
-        :return: path
-        """
+    def set_stat(self) -> None:
         pass
 
     @abstractmethod

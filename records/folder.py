@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+import json
+import time
+from pathlib import Path
+from typing import Union
+
+from errors import UnableToAccessException
 from records.base_record import BaseRecord
 from records.file import File
 
@@ -13,44 +19,40 @@ class Folder(BaseRecord):
     Stores information about the file
     Attributes:
         handler         handler to manipulate a real file
-        name            name of a file
-        location        real file path
         modified        last time of a file
         size            size of a file
         id          unique id of a record
         base_location   needed to know the relative and absolute path
     """
 
-    def __init__(self, path, handler, base_location=None, info_dict: dict = None):
+    def __init__(self, path, handler, base_path=None, stat: dict = None):
         super().__init__()
+        path_obj = Path(path)
+
         self.handler = handler
-        if not info_dict:
-            info_dict = self.handler.get_folder_stat(path)
-        self.id = info_dict.get("id")
-        self.name = info_dict.get("name")
-        self.base_location = base_location
-        self.location = info_dict.get("location")
+        self.path = path
 
-        self.size = info_dict.get("size")
-        self.modified = info_dict.get("modified")
-
+        self.base_location = base_path
+        self.name = path_obj.name
         self.children = dict()
 
-    def get_full_path(self):
-        """
-        Returns path of a folder
-        :return:
-        """
+        self.set_stat(stat)
 
-        return f"{self.location}/{self.name}"
+    def set_stat(self, stat: dict = None) -> None:
+        if not stat:
+            stat = self.handler.get_folder_stat(self.path)
 
-    def add_child(self, record):
+        self.id = stat.get("id")
+        self.size = stat.get("size")
+        self.modified = stat.get("modified")
+
+    def add_child(self, record: Union[Folder, File]):
         """
         Adds the child records to the folder structure
         :param record: Folder or File object instance
         :return: None
         """
-        self.children[record.get_full_path()] = record
+        self.children[record.path] = record
 
     def set_content(self):
         """
@@ -65,7 +67,7 @@ class Folder(BaseRecord):
 
     def copy(self, remote_location, remote_handler, with_content=False) -> Folder:
         """
-        Copyies the folder into a remote location
+        Copies the folder into a remote location
         Uses remote handler to create and store file
 
         If specified copies all the content of the folder
@@ -85,8 +87,8 @@ class Folder(BaseRecord):
         :return: file structure dictionary
         """
         structure = dict()
-        structure[self.get_full_path()] = dict()
-        structure[self.get_full_path()]["data"] = self.get_dict()
+        structure[self.path] = dict()
+        structure[self.path]["data"] = self.get_dict()
         children = []
 
         for path, record in self.children.items():
@@ -94,24 +96,34 @@ class Folder(BaseRecord):
                 children.append(record.get_structure())
             else:
                 children.append(record.get_dict())
-        structure[self.get_full_path()]["children"] = children
+        structure[self.path]["children"] = children
         return structure
 
-    def dump_structure(self, remote_location, remote_handler) -> File:
-        """
-        Saves file structure in a specified location
-        :param remote_location: path of a remote location
-        :param remote_handler:  handler to create and store file
-        :return:
-        """
-        file = remote_handler.dump_file_structure(self, remote_location)
+    def dump_structure(self, save_folder: Folder = None) -> File:
+        if not save_folder:
+            save_folder = self
+        structure = self.get_structure()
+        structure_encoded = json.dumps(structure, indent=4, ensure_ascii=False).encode("utf-8")
+
+        file_path = f"{save_folder.path}/structure.json"
+
+        file = File(
+            path=file_path,
+            handler=save_folder.handler,
+            stat={
+                "size": len(structure_encoded),
+                "modified": time.time()
+            }
+        )
+
+        file.set_content(structure_encoded)
+
         return file
 
     def __str__(self):
         return f"Type: Folder\n" \
-               f"Lctn: {self.get_full_path()}\n" \
+               f"Lctn: {self.path}\n" \
                f"Name: {self.name}\n" \
                f"Size: {self.size}\n" \
                f"Modf: {self.modified}\n" \
                f"Id:   {self.id}\n"
-

@@ -1,3 +1,6 @@
+from __future__ import annotations
+from pathlib import Path
+
 from records.base_record import BaseRecord
 
 
@@ -19,19 +22,27 @@ class File(BaseRecord):
 
     """
 
-    def __init__(self, path, handler, info_dict: dict = None):
+    def __init__(self, path, handler, stat: dict = None):
         super().__init__()
-        self.handler = handler
-        if not info_dict:
-            info_dict = self.handler.get_file_stat(path)
-        self.id = info_dict.get("id")
-        self.name = info_dict.get("name")
-        self.location = info_dict.get("location")
-        self.format_ = info_dict.get("format")
-        self.size = info_dict.get("size")
-        self.modified = info_dict.get("modified")
+        path_obj = Path(path)
 
-    def get_dict(self):
+        self.handler = handler
+        self.path = path
+
+        self.name = path_obj.name
+        self.format_ = path_obj.suffix
+
+        self.set_stat(stat)
+
+    def set_stat(self, stat: dict = None):
+        if not stat:
+            stat = self.handler.get_file_stat(self.path)
+
+        self.id = stat.get("id")
+        self.size = stat.get("size")
+        self.modified = stat.get("modified")
+
+    def get_dict(self) -> dict:
         """
         Returns basis information about the file
         Overrides BaseRecord method
@@ -39,19 +50,9 @@ class File(BaseRecord):
 
         :return: dictionary about the file
         """
-        info_dict = super().get_dict()
-        info_dict["format"] = self.format_
-        return info_dict
-
-    def get_full_path(self):
-        """
-        Returns path of a file
-        :return:
-        """
-        path = f"{self.location}/{self.name}"
-        if self.format_ != "no_format":
-            path += f".{self.format_}"
-        return path
+        stat = super().get_dict()
+        stat["format"] = self.format_
+        return stat
 
     def get_content(self) -> bytes:
         """
@@ -69,9 +70,9 @@ class File(BaseRecord):
         """
         self.handler.set_file_content(self, content)
 
-    def copy(self, remote_handler, remote_location):
+    def copy(self, remote_handler, remote_location) -> File:
         """
-        Copyies the file into a remote location
+        Copies the file into a remote location
         Uses remote handler to create and store file
         :param remote_handler: remote handler to handle file creation
         :param remote_location: remote path used to save a file
@@ -82,7 +83,7 @@ class File(BaseRecord):
 
     def __str__(self):
         return f"Type: File\n" \
-               f"Lctn: {self.get_full_path()}\n" \
+               f"Lctn: {self.path}\n" \
                f"Name: {self.name}\n" \
                f"Frmt: {self.format_}\n" \
                f"Size: {self.size}\n" \

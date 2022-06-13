@@ -16,11 +16,6 @@ class BaseHandler(ABC):
             validators = []
         self.validators = validators
 
-    def set_validators(self, *args: List[Callable]):
-        self.validators = []
-        for validator in args:
-            self.validators.append(validator)
-
     def validate(self, path: str):
         if self.validators:
             for validator in self.validators:
@@ -103,11 +98,11 @@ class BaseHandler(ABC):
         pass
 
     @abstractmethod
-    def dump_file_structure(self, root_folder: Folder, location) -> File:
+    def set_file_content(self, file: File, content: bytes):
         """
-        Should save folder structure in a form of a JSON file
-        :param root_folder: root Folder object instance
-        :param location: path to the folder where the JSON file should be saved
-        :return: newly created JSON File object instance
+        Should set contents of a specified file
+        :param file:    File object instance
+        :param content: new file contents in bytes
+        :return:        None
         """
         pass
