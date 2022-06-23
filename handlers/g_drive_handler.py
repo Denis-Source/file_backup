@@ -5,8 +5,6 @@ import io
 
 import googleapiclient
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
 
 from errors import NoBasePathSpecifiedException, UnableToAccessException, RecordNotFoundException
 from handlers.base_handler import BaseHandler
@@ -129,7 +127,7 @@ class GDriveHandler(BaseHandler):
         records = response.get('files', [])
 
         if not records:
-            self.LOGGER.warning(f"File not found of {path}")
+            self.LOGGER.warning(f"Folder not found of {path}")
             raise RecordNotFoundException(path)
 
         self.LOGGER.info(f"Got file id of {path}: {records[0]['id']}")
@@ -189,7 +187,7 @@ class GDriveHandler(BaseHandler):
 
             # if response is empty raises an exception
             if not records and response:
-                self.LOGGER.warning(f"File not found at {path}")
+                self.LOGGER.warning(f"Folder {path} not found")
                 raise RecordNotFoundException(path)
 
             # due to the way how Google Drive api stores date
@@ -232,6 +230,50 @@ class GDriveHandler(BaseHandler):
         self.LOGGER.info("Download is successful")
         file.seek(0)
         return file.read()
+
+    def upload_structure(self, folder: Folder, content: bytes) -> File:
+        """
+        Saves folder the structure JSON in a specified folder
+
+        :raises UnableToAccessException: if the file could not be accessed
+
+        :param folder:  Folder object instance to upload file into
+        :param content: bytes to load in the file
+        :return:        newly created File object instance
+        """
+
+        file_name = "structure.json"
+        files_to_replace_id = self._find_files_in_folder(folder.id, file_name)
+
+        if files_to_replace_id:
+            for file_info in files_to_replace_id:
+                self.LOGGER.info(f"Deleting identical file {file_info['name']}")
+                self._connection.files().delete(fileId=file_info["id"]).execute()
+
+        file_content = io.BytesIO(content)
+        downloader = MediaIoBaseUpload(file_content, mimetype="application/binary")
+
+        file_metadata = {
+            "name": file_name,
+            "parents": [folder.id],
+        }
+        file_info = self._connection.files().create(body=file_metadata, media_body=downloader,
+                                                    fields=f"id, name, size, modifiedTime", ).execute()
+
+        dt = datetime.datetime.strptime(file_info.get("modifiedTime"), "%Y-%m-%dT%H:%M:%S.%f%z")
+        modified = dt.timestamp()
+
+        self.LOGGER.info(f"File structure created in {folder.id}")
+        
+        return File(
+            path=f"{folder.path}/{file_name}",
+            handler=self,
+            stat={
+                "modified": modified,
+                "size": file_info.get("size"),
+                "id": file_info.get("id"),
+            }
+        )
 
     def upload_file(self, file: File, remote_folder: Folder) -> File:
         """

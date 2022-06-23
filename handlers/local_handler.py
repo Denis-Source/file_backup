@@ -113,24 +113,30 @@ class LocalHandler(BaseHandler):
             self.LOGGER.error(f"Cant read file {file.path}")
             raise UnableToAccessException(file.path)
 
-    def set_file_content(self, file: File, content: bytes) -> None:
+    def upload_structure(self, folder: Folder, content: bytes) -> File:
         """
-        Updates file content
-        The file should be copied first
+        Saves the folder structure JSON in a specified folder
 
         :raises UnableToAccessException: if the file could not be accessed
 
-        :param file:    File object instance to update
+        :param folder:  Folder object instance to upload file into
         :param content: bytes to load in the file
-        :return:        None
+        :return:        newly created File object instance
         """
-        self.LOGGER.info(f"Updating {file.path} content")
+
+        self.LOGGER.info(f"Updating file structure in {folder.path} content")
+        file_path = f"{folder.path}/structure.json"
         try:
-            with open(file.path, "wb") as f:
+            with open(file_path, "wb") as f:
                 f.write(content)
         except (OSError, PermissionError):
-            self.LOGGER.error(f"Unable to update {file.path} contents")
-            raise UnableToAccessException(file.path)
+            self.LOGGER.error(f"Unable to update {file_path} contents")
+            raise UnableToAccessException(file_path)
+
+        return File(
+            file_path,
+            self
+        )
 
     def upload_file(self, file: File, remote_folder: Folder) -> File:
         """

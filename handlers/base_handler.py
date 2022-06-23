@@ -98,11 +98,12 @@ class BaseHandler(ABC):
         pass
 
     @abstractmethod
-    def set_file_content(self, file: File, content: bytes):
+    def upload_structure(self, folder: Folder, content: bytes) -> File:
         """
-        Should set contents of a specified file
-        :param file:    File object instance
+        Should save the folder structure JSON in a specified folder
+
+        :param folder:  Folder object instance to upload file into
         :param content: new file contents in bytes
-        :return:        None
+        :return:        newly created File object instance
         """
         pass

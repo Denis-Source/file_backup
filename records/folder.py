@@ -105,18 +105,7 @@ class Folder(BaseRecord):
         structure = self.get_structure()
         structure_encoded = json.dumps(structure, indent=4, ensure_ascii=False).encode("utf-8")
 
-        file_path = f"{save_folder.path}/structure.json"
-
-        file = File(
-            path=file_path,
-            handler=save_folder.handler,
-            stat={
-                "size": len(structure_encoded),
-                "modified": time.time()
-            }
-        )
-
-        file.set_content(structure_encoded)
+        file = save_folder.handler.upload_structure(save_folder, structure_encoded)
 
         return file
 
