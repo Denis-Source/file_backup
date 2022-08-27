@@ -14,7 +14,7 @@ Application has the following handlers to copy folder contents:
 - remote sftp server;
 - google drive.
 
-> Note: SFTP handler requires server configurations (IP address, key file location), GDrive handler requires credentials for the V3 API.
+> SFTP handler requires server configurations (IP address, key file location), GDrive handler requires credentials for the V3 API.
 
 * * *
 
@@ -50,7 +50,7 @@ python main.py -i {input_folder} -o {output_folder}
 ## Showcase
 
 The console applicaiton has the following signature:
-> Note: all of the exapmles below were provided using [WSL](https://docs.microsoft.com/ru-ru/windows/wsl/install) to avoid mixing of UNIX and Windows file system path formats.
+> All of the exapmles below were provided using [WSL](https://docs.microsoft.com/ru-ru/windows/wsl/install) to avoid mixing of UNIX and Windows file system path formats.
 
 ```sh
 usage: main.py [-h] [-ih INPUT_HANDLER] [-oh OUTPUT_HANDLER] [-i INPUT] -o OUTPUT [-v]
@@ -133,7 +133,7 @@ The logging output:
 ### SFTP Handler
 We can specify `sftp` both as the input or output handlers using `-ih` and `-oh`:
 
-> Note: to use SFTP it is required to configre the following constants in the `config.py` file:  `HOST`,  `USERNAME`,  `KEY LOCATION`.
+> To use SFTP it is required to configre the following constants in the `config.py` file:  `HOST`,  `USERNAME`,  `KEY LOCATION`.
 
 To upload the previous local `samples/` folder to the SFTP server, we should use the following command:
 ```sh
@@ -187,14 +187,14 @@ We can also swap the handlers:
 python main.py -o ~/samples/ -i backups/samples -ih sftp -oh local
 ```
 
-> Note: if `-ih` or `-oh` keys are not specified, the `local` handler will be used
+> If `-ih` or `-oh` keys are not specified, the `local` handler will be used
 ***
 
 ### Google Drive Handler
 
 We can use Google Drive Handler to upload or download folders.
 
->Note: to use GDrive handler, we should provide `secrets.json` file.
+>To use GDrive handler, we should provide `secrets.json` file.
 
 To upload `samples/` folder we will can use the following command:
 
@@ -254,7 +254,7 @@ tree /mnt/c/file_backup/source_code/ | wc -l
 14037
 ```
 
->Note: if `-i` key is not specified, it will copy the current folder.
+>If `-i` key is not specified, it will copy the current folder.
 
 We can filter out unnecessary files (`.pyc` binaries, `.env` files, etc) by setting file\folder filtering using `config.py` fle using regular expressions:
 
