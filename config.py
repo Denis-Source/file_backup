@@ -2,9 +2,9 @@ from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 
 class Config:
-    HOST = "31.131.17.154"
+    HOST = ""
     USERNAME = "root"
-    KEY_LOCATION = r"C:\Keys\200scs"
+    KEY_LOCATION = ""
 
     BACKUP_DIRECTORIES = []
 
