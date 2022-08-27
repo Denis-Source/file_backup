@@ -83,7 +83,6 @@ class BaseHandler(ABC):
         :param folder: Folder object instance to copy from
         :param new_folder_path: string path to copy to
         :param with_content: whether to copy folder contents
-        :param validators: list of validators
         :return: newly created Folder object instance
         """
         pass

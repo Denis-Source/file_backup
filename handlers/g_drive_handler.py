@@ -1,6 +1,6 @@
 import datetime
 import os
-from typing import Union, List
+from typing import Union, List, Callable
 import io
 
 import googleapiclient
@@ -40,8 +40,8 @@ class GDriveHandler(BaseHandler):
     HANDLER_NAME = "gdrive handler"
     LOGGER = Logger(HANDLER_NAME)
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, validators: List[Callable] = None):
+        super().__init__(validators)
         self._credentials = None
         self._connection = None
         self._authenticate()

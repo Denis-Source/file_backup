@@ -1,28 +1,31 @@
-# # from handlers.local_handler import LocalHandler
-# # from handlers.sftp_handler import SFTPHandler
-# # from handlers.g_drive_handler import GDriveHandler
-# #
-# # from records.file import File
-# # from records.folder import Folder
-# #
-# # from validator import Validator
-# from backup_app import BackUpApp
-from handlers.local_handler import LocalHandler
-from records.folder import Folder
+import os
+import argparse
+
+from console import Console
+
 
 if __name__ == '__main__':
-    # BackUpApp().run()
+    parser = argparse.ArgumentParser(description="File Backup command line App")
+    parser.add_argument(
+        "-ih", "--input_handler", help="Type of a handler as an input", default=Console.LOCAL_HANDLER
+    )
+    parser.add_argument(
+        "-oh", "--output_handler", help="Type of a handler as an output",
+        default=Console.LOCAL_HANDLER
+    )
 
-#     validators = [Validator.format_validator, Validator.name_validator]
-#
-    input_folder_path = r"C:/Games/Besiege v1.10"
-    # output_folder_path = "game"
+    default_location = os.getcwd()
 
-    input_handler = LocalHandler()
-    input_folder = Folder(input_folder_path, input_handler, input_folder_path)
+    parser.add_argument("-i", "--input", help="Input location", default=default_location)
+    parser.add_argument("-o", "--output", help="Output location", required=True)
+    parser.add_argument("-v", "--validation", help="Use validators defined in the configs", action="store_true")
 
-    input_folder.set_content()
-    print()
-    #
-    # output_handler = GDriveHandler()
-    # input_folder.copy(output_folder_path, output_handler, with_content=True)
+    args = parser.parse_args()
+
+    Console(
+        input_handler=args.input_handler,
+        output_handler=args.output_handler,
+        input_path=args.input,
+        output_path=args.output,
+        validation=args.validation
+    ).run()
