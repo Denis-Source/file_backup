@@ -7,18 +7,18 @@ from console import Console
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="File Backup command line App")
     parser.add_argument(
-        "-ih", "--input_handler", help="Type of a handler as an input", default=Console.LOCAL_HANDLER
+        "-ih", "--input_handler", help="type of a handler as an input", default=Console.LOCAL_HANDLER
     )
     parser.add_argument(
-        "-oh", "--output_handler", help="Type of a handler as an output",
+        "-oh", "--output_handler", help="type of a handler as an output",
         default=Console.LOCAL_HANDLER
     )
 
     default_location = os.getcwd()
 
-    parser.add_argument("-i", "--input", help="Input location", default=default_location)
-    parser.add_argument("-o", "--output", help="Output location", required=True)
-    parser.add_argument("-v", "--validation", help="Use validators defined in the configs", action="store_true")
+    parser.add_argument("-i", "--input", help="input location", default=default_location)
+    parser.add_argument("-o", "--output", help="output location", required=True)
+    parser.add_argument("-v", "--validation", help="use validators defined in the configs", action="store_true")
 
     args = parser.parse_args()
 

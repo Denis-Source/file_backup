@@ -22,7 +22,7 @@ class LocalHandler(BaseHandler):
         HANDLER_NAME    name of the handler
         LOGGER          logger instance
     """
-    HANDLER_NAME = "local handler"
+    HANDLER_NAME = "local"
     LOGGER = Logger(HANDLER_NAME)
 
     def get_file_stat(self, path: str) -> dict:

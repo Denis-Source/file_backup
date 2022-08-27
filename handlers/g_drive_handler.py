@@ -37,7 +37,7 @@ class GDriveHandler(BaseHandler):
     SCOPES = ["https://www.googleapis.com/auth/drive"]
     CREDENTIALS_FILE = "client_secrets.json"
     TOKEN_FILE = "token.json"
-    HANDLER_NAME = "gdrive handler"
+    HANDLER_NAME = "gdrive"
     LOGGER = Logger(HANDLER_NAME)
 
     def __init__(self, validators: List[Callable] = None):

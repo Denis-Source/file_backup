@@ -43,13 +43,14 @@ class Console:
         else:
             validators = [Validator.format_validator, Validator.name_validator]
 
-        self.input_handler = self.HANDLERS.get(input_handler)(validators)
-        self.output_handler = self.HANDLERS.get(output_handler)(validators)
+        input_handler_cls = self.HANDLERS.get(input_handler)
+        output_handler_cls = self.HANDLERS.get(output_handler)
 
-        print(self.input_handler, self.output_handler)
-
-        if not self.input_handler and not self.output_handler:
+        if not input_handler_cls or not output_handler_cls:
             raise Exception(f"Only the following handlers should be provided: {', '.join(self.HANDLERS.keys())}")
+
+        self.input_handler = input_handler_cls(validators)
+        self.output_handler = output_handler_cls(validators)
 
         self.input_path = input_path
         self.output_path = output_path
@@ -63,9 +64,9 @@ class Console:
 
         self.logger.info(
             f"Backuping files from {self.input_path} "
-            f"using {self.input_handler.HANDLER_NAME} "
+            f"using {self.input_handler.HANDLER_NAME} handler "
             f"to {self.output_path} "
-            f"using {self.input_handler.HANDLER_NAME} "
+            f"using {self.input_handler.HANDLER_NAME} handler "
             f"{'using' if self.validation else 'not using'} "
             f"validators"
         )

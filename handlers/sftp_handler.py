@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Callable
 
 from config import Config
 from handlers.base_handler import BaseHandler
@@ -21,14 +21,18 @@ class SFTPHandler(BaseHandler):
         CONNECTION      sftp connection based on pysftp.Connection
     """
 
-    HANDLER_NAME = "sftp handler"
+    HANDLER_NAME = "sftp"
     LOGGER = Logger(HANDLER_NAME)
+    CONNECTION = None
 
-    CONNECTION = pysftp.Connection(
-        username=Config.USERNAME,
-        host=Config.HOST,
-        private_key=Config.KEY_LOCATION
-    )
+    def __init__(self, validators: List[Callable] = None):
+        super().__init__(validators)
+        if not self.CONNECTION:
+            self.CONNECTION = pysftp.Connection(
+                username=Config.USERNAME,
+                host=Config.HOST,
+                private_key=Config.KEY_LOCATION
+            )
 
     def get_file_stat(self, path: str) -> dict:
         """
