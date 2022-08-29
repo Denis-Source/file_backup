@@ -2,13 +2,13 @@
 
 ## About
 
-Command line application to copy folder content from one location to another.
+Command line application to copy the folder content from one location to another.
 
-Location is not restricted to the local file system as there is an ability to choose both input and output locations.
+Location is not restricted to the local file system as there is an ability to choose both input and output handlers.
 
 > All of the handlers can be used in an arbitrary order.
 
-Application has the following handlers to copy folder contents:
+Application has the following handlers:
 
 - "vanila" file system;
 - remote sftp server;
@@ -50,7 +50,6 @@ python main.py -i {input_folder} -o {output_folder}
 ## Showcase
 
 The console applicaiton has the following signature:
-> All of the exapmles below were provided using [WSL](https://docs.microsoft.com/ru-ru/windows/wsl/install) to avoid mixing of UNIX and Windows file system path formats.
 
 ```sh
 usage: main.py [-h] [-ih INPUT_HANDLER] [-oh OUTPUT_HANDLER] [-i INPUT] -o OUTPUT [-v]
@@ -64,6 +63,9 @@ optional arguments:
   -o, --output               output location
   -v, --validation           use validators defined in the configs
 ```
+
+> All of the exapmles below were provided using [WSL](https://docs.microsoft.com/ru-ru/windows/wsl/install) to avoid mixing of UNIX and Windows file system path formats.
+
 ***
 
 ### Local Handler
