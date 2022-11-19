@@ -2,18 +2,23 @@ from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 
 class Config:
-    HOST = ""
-    USERNAME = "root"
-    KEY_LOCATION = ""
+    # SFTP
+    SFTP_HOST = ""
+    SFTP_USERNAME = "root"
+    SFTP_KEY_LOCATION = ""
 
-    BACKUP_DIRECTORIES = []
+    # GDRIVE
+    GDRIVE_CREDENTIALS_FILE = "client_secrets.json"
+    GDRIVE_TOKEN_FILE = "token.json"
 
-    REMOTE_FOLDER = ""
+    # DROPBOX
+    DROPBOX_TOKEN = ""
 
     # Filters
     EXCLUDED_NAMES = [
         r"^__",
-        r"^env",
+        r"l_env",
+        r"env",
         r"^venv",
         r"^\.",
         "^node_modules$",

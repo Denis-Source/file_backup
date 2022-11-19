@@ -29,9 +29,9 @@ class SFTPHandler(BaseHandler):
         super().__init__(validators)
         if not self.CONNECTION:
             self.CONNECTION = pysftp.Connection(
-                username=Config.USERNAME,
-                host=Config.HOST,
-                private_key=Config.KEY_LOCATION
+                username=Config.SFTP_USERNAME,
+                host=Config.SFTP_HOST,
+                private_key=Config.SFTP_KEY_LOCATION
             )
 
     def get_file_stat(self, path: str) -> dict:

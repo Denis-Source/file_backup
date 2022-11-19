@@ -20,6 +20,8 @@ from googleapiclient.errors import HttpError
 from records.file import File
 from records.folder import Folder
 
+from config import Config
+
 
 class GDriveHandler(BaseHandler):
     """
@@ -28,15 +30,11 @@ class GDriveHandler(BaseHandler):
 
     Constants:
         SCOPES              scopes of API to be able to read/write remote files
-        CREDENTIALS_FILE    file that stores credentials needed for API
-        TOKEN_FILE          file that stores token (to allow automatic login)
         HANDLER_NAME        name of the handler
         LOGGER              logger instance
     """
 
     SCOPES = ["https://www.googleapis.com/auth/drive"]
-    CREDENTIALS_FILE = "client_secrets.json"
-    TOKEN_FILE = "token.json"
     HANDLER_NAME = "gdrive"
     LOGGER = Logger(HANDLER_NAME)
 
@@ -54,20 +52,20 @@ class GDriveHandler(BaseHandler):
         Stores a token to save a session
         :return:
         """
-        if os.path.exists('token.json'):
-            self._credentials = Credentials.from_authorized_user_file('token.json', self.SCOPES)
+        if os.path.exists(Config.GDRIVE_TOKEN_FILE):
+            self._credentials = Credentials.from_authorized_user_file(Config.GDRIVE_TOKEN_FILE, self.SCOPES)
 
         if not self._credentials or not self._credentials.valid:
             if self._credentials and self._credentials.expired and self._credentials.refresh_token:
                 self._credentials.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    self.CREDENTIALS_FILE, self.SCOPES)
+                    Config.GDRIVE_CREDENTIALS_FILE, self.SCOPES)
                 self._credentials = flow.run_local_server(port=0)
-            with open(self.TOKEN_FILE, 'w') as token:
+            with open(Config.GDRIVE_TOKEN_FILE, "w") as token:
                 token.write(self._credentials.to_json())
         try:
-            self._connection = build('drive', 'v3', credentials=self._credentials)
+            self._connection = build("drive", "v3", credentials=self._credentials)
         except HttpError as error:
             self.LOGGER.critical(f"An error occurred during the authentication: {error}")
 
@@ -264,7 +262,7 @@ class GDriveHandler(BaseHandler):
         modified = dt.timestamp()
 
         self.LOGGER.info(f"File structure created in {folder.id}")
-        
+
         return File(
             path=f"{folder.path}/{file_name}",
             handler=self,
@@ -354,7 +352,7 @@ class GDriveHandler(BaseHandler):
             location = ""
         else:
             parent_id = parent_folder.id
-            location = parent_folder.path
+            location = parent_folder.path.replace("//", "/")
 
         self.LOGGER.debug(f"Creating folder {folder_name} at {location}")
         folders_to_replace_id = self._find_files_in_folder(parent_id, folder_name)
@@ -433,6 +431,8 @@ class GDriveHandler(BaseHandler):
         new_folder_path = f"{new_folder_path}{folder_relative_path}"
 
         folder_paths = new_folder_path.split("/")
+        if new_folder_path.startswith("/"):
+            folder_paths.pop(0)
 
         new_folder = None
         self.LOGGER.info(f"Creating folder at {new_folder_path}")
@@ -503,6 +503,3 @@ class GDriveHandler(BaseHandler):
                     stat=record_dict
                 ))
         return records
-
-    def set_file_content(self, file: File, content: bytes):
-        pass
