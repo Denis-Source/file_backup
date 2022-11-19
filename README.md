@@ -6,16 +6,16 @@ Command line application to copy the folder content from one location to another
 
 Location is not restricted to the local file system as there is an ability to choose both input and output handlers.
 
-> All of the handlers can be used in an arbitrary order.
+> All the handlers can be used in an arbitrary order.
 
 Application has the following handlers:
 
-- "vanila" file system;
-- remote sftp server;
-- google drive.
+- "vanilla" file system;
+- remote SFTP server;
+- Google Drive;
+- DropBox.
 
-> SFTP handler requires server configurations (IP address, key file location), GDrive handler requires credentials for the V3 API.
-
+> SFTP handler requires server configurations (IP address, key file location), GDrive handler requires credentials for the V3 API and Dropbox requires authorization token.
 * * *
 
 ## Used libraries
@@ -23,11 +23,12 @@ Application has the following handlers:
 - `googleapiclient`
 - `pysftp`
 - `os`
+- `dropbox`
 
 `LocalHandler` mainly uses built-in `os` library as it provides tools for the folder creation, file system inromation retriving.
 `SFTPHandler` uses `pysftp` library that is very similar to the `os` library
 `GDriveHandler` uses [GoogleDrive V3 API](https://developers.google.com/drive/api/quickstart/quickstarts-overview).
-
+`DropBoxHandler` uses [DropBox Python SDK for API v2](https://www.dropbox.com/developers/documentation/python#overview)
 * * *
 
 ## Installation
@@ -49,7 +50,7 @@ python main.py -i {input_folder} -o {output_folder}
 
 ## Showcase
 
-The console applicaiton has the following signature:
+The console application has the following signature:
 
 ```sh
 usage: main.py [-h] [-ih INPUT_HANDLER] [-oh OUTPUT_HANDLER] [-i INPUT] -o OUTPUT [-v]
@@ -64,7 +65,7 @@ optional arguments:
   -v, --validation           use validators defined in the configs
 ```
 
-> All of the exapmles below were provided using [WSL](https://docs.microsoft.com/ru-ru/windows/wsl/install) to avoid mixing of UNIX and Windows file system path formats.
+> All the examples below were provided using [WSL](https://docs.microsoft.com/ru-ru/windows/wsl/install) to avoid mixing of UNIX and Windows file system path formats.
 
 ***
 
@@ -135,7 +136,7 @@ The logging output:
 ### SFTP Handler
 We can specify `sftp` both as the input or output handlers using `-ih` and `-oh`:
 
-> To use SFTP it is required to configre the following constants in the `config.py` file:  `HOST`,  `USERNAME`,  `KEY LOCATION`.
+> To use SFTP it is required to configure the following constants in the `config.py` file:  `HOST`,  `USERNAME`,  `KEY LOCATION`.
 
 To upload the previous local `samples/` folder to the SFTP server, we should use the following command:
 ```sh
@@ -198,7 +199,7 @@ We can use Google Drive Handler to upload or download folders.
 
 >To use GDrive handler, we should provide `secrets.json` file.
 
-To upload `samples/` folder we will can use the following command:
+To upload `samples/` folder we can use the following command:
 
 ```sh
 python main.py -i ~/samples/ -o backups/samples -oh gdrive
@@ -241,8 +242,47 @@ Program output:
 2022-08-27 17:43:27,634 INFO    app             Done in 0:00:10!
 ```
 
-Google Drive folder contens:
+Google Drive folder contents:
 ![google drive folder](https://i.ibb.co/RSj33QV/image.png)
+***
+#### DropBox
+We can also use DropBox Handler to copy the previously mentioned samples from the Google Drive to DropBox.
+
+> In order to function, the API token should be generated from application console with the needed permissions. The token itself should be specified in the configs.
+
+To copy `samples/` folder we can use the following command:
+```sh
+python main.py  -i backups -ih gdrive -o backups -oh dropbox
+```
+
+Program output:
+```
+2022-11-19 06:47:12,604 INFO    app             Backuping files from backups using gdrive handler to backups using gdrive handler not using validators
+2022-11-19 06:47:12,928 INFO    gdrive          Got id about the root folder: 0AH3CXGph3HmOUk9PVA
+2022-11-19 06:47:14,925 INFO    dropbox         deleted already created folder
+2022-11-19 06:47:16,355 INFO    gdrive          Request to read file backups/samples/BuzzBuzz_edited.wav is successful
+2022-11-19 06:47:16,355 INFO    gdrive          Downloading file in memory
+2022-11-19 06:47:17,130 INFO    gdrive          Download is successful
+2022-11-19 06:47:18,584 INFO    dropbox         Uploaded file backups/samples/BuzzBuzz_edited.wav
+2022-11-19 06:47:18,584 INFO    gdrive          Request to read file backups/samples/SX_Phone_origin.wav is successful
+2022-11-19 06:47:18,584 INFO    gdrive          Downloading file in memory
+2022-11-19 06:47:19,142 INFO    gdrive          Download is successful
+2022-11-19 06:47:20,109 INFO    dropbox         Uploaded file backups/samples/SX_Phone_origin.wav
+2022-11-19 06:47:20,972 INFO    gdrive          Request to read file backups/samples/edited/Wow_Edited.wav is successful
+2022-11-19 06:47:20,972 INFO    gdrive          Downloading file in memory
+2022-11-19 06:47:21,600 INFO    gdrive          Download is successful
+2022-11-19 06:47:23,160 INFO    dropbox         Uploaded file backups/samples/edited/Wow_Edited.wav
+2022-11-19 06:47:23,168 INFO    gdrive          Request to read file backups/samples/SX_Door_origin.wav is successful
+2022-11-19 06:47:23,168 INFO    gdrive          Downloading file in memory
+2022-11-19 06:47:23,817 INFO    gdrive          Download is successful
+2022-11-19 06:47:24,866 INFO    dropbox         Uploaded file backups/samples/SX_Door_origin.wav
+2022-11-19 06:47:24,866 INFO    app             Done in 0:00:12!
+```
+
+DropBox folder contents:
+
+![dropbox_example](https://i.ibb.co/Jd7DnhH/image.png)
+
 
 ### Validators
 If we try to copy the contents of the source folder:
@@ -261,17 +301,17 @@ tree /mnt/c/file_backup/source_code/ | wc -l
 We can filter out unnecessary files (`.pyc` binaries, `.env` files, etc) by setting file\folder filtering using `config.py` fle using regular expressions:
 
 ```py
-    EXCLUDED_NAMES = [
-        r"^__",
-        r"^env",
-        r"^venv",
-        r"^\.",
-        "^lib$",
-    ]
-    EXCLUDED_FORMATS = [
-        "pyc",
-        "pyd",
-    ]
+EXCLUDED_NAMES = [
+    r"^__",
+    r"^env",
+    r"^venv",
+    r"^\.",
+    "^lib$",
+]
+EXCLUDED_FORMATS = [
+    "pyc",
+    "pyd",
+]
 ```
 
 To use them, we simply provide `-v` key:
@@ -279,7 +319,7 @@ To use them, we simply provide `-v` key:
 python main.py -o /mnt/c/file_backup/source_code -v
 ```
 
-Now the output folder conatins only 22 files:
+Now the output folder contains only 22 files:
 ```sh
 tree /mnt/c/file_backup/source_code/ | wc -l
 22

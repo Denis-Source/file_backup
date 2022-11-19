@@ -142,15 +142,20 @@ class DropBoxHandler(BaseHandler):
         """
         self.LOGGER.debug(f"Uploading file from {file.path} to {remote_folder.path}")
 
+        if remote_folder.path.startswith("/"):
+            leading = ""
+        else:
+            leading = "/"
+
         try:
             result = self._connection.files_upload(
                 f=file.get_content(),
-                path=f"{remote_folder.path}/{file.name}",
+                path=f"{leading}{remote_folder.path}/{file.name}",
                 mute=True
             )
             self.LOGGER.info(f"Uploaded file {file.path}")
             return File(
-                path=f"{remote_folder.path}/{file.name}",
+                path=f"{leading}{remote_folder.path}/{file.name}",
                 handler=self,
                 stat={
                     "modified": result.server_modified.timestamp(),
@@ -178,7 +183,10 @@ class DropBoxHandler(BaseHandler):
         """
         try:
             self.LOGGER.debug(f"trying to delete already created folder")
-            self._connection.files_delete_v2(folder.path)
+            if folder.path.startswith("/"):
+                self._connection.files_delete_v2(folder.path)
+            else:
+                self._connection.files_delete_v2(f"/{folder.path}")
             self.LOGGER.info(f"deleted already created folder")
         except DropboxException:
             self.LOGGER.debug(f"folder does not already exist to delete")
@@ -192,7 +200,11 @@ class DropBoxHandler(BaseHandler):
         new_base_folder_path = new_folder_path
         new_folder_path = f"{new_folder_path}{folder_relative_path}"
 
-        result = self._connection.files_create_folder_v2(folder.path, autorename=True).metadata
+        if folder.path.startswith("/"):
+            result = self._connection.files_create_folder_v2(folder.path).metadata
+        else:
+            result = self._connection.files_create_folder_v2(f"/{folder.path}").metadata
+
         new_folder = Folder(
             path=new_folder_path,
             handler=self,
