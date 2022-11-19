@@ -1,6 +1,7 @@
 import datetime
 import time
 
+from handlers.dropbox_handler import DropBoxHandler
 from handlers.g_drive_handler import GDriveHandler
 from handlers.local_handler import LocalHandler
 from handlers.sftp_handler import SFTPHandler
@@ -17,11 +18,13 @@ class Console:
     LOCAL_HANDLER = LocalHandler.HANDLER_NAME
     SFTP_HANDLER = SFTPHandler.HANDLER_NAME
     GDRIVE_HANDLER = GDriveHandler.HANDLER_NAME
+    DROPBOX_HANDLER = DropBoxHandler.HANDLER_NAME
 
     HANDLERS = {
         LOCAL_HANDLER: LocalHandler,
         SFTP_HANDLER: SFTPHandler,
-        GDRIVE_HANDLER: GDriveHandler
+        GDRIVE_HANDLER: GDriveHandler,
+        DROPBOX_HANDLER: DropBoxHandler
     }
 
     def __init__(self, input_handler, output_handler, input_path, output_path, validation):

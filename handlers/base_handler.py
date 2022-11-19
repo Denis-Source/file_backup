@@ -28,11 +28,9 @@ class BaseHandler(ABC):
         """
         Should return the following stats about the specified file
         in a form of a dictionary:
-            location
-            name
-            format
             modified
             size
+            id
 
         :param path: location of the file
         :return: dictionary with the specified information
@@ -44,10 +42,9 @@ class BaseHandler(ABC):
         """
         Should return the following stats about the specified folder
         in a form of a dictionary:
-            location
-            name
-            created
+            modified
             size
+            id
 
         :param path: location of the folder
         :return: dictionary with the specified information
